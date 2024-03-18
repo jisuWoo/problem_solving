@@ -1,0 +1,129 @@
+using UnityEngine;
+
+public class Node
+{
+    public int Data;
+    public Node Next;
+
+    public Node(int data)
+    {
+        Data = data;
+        Next = null;
+    }
+}
+
+public class LinkedQueue
+{
+    private Node front;
+    private Node rear;
+
+    public LinkedQueue()
+    {
+        front = null;
+        rear = null;
+    }
+
+    public void Enqueue(int data)
+    {
+        Node newNode = new Node(data);
+
+        if (rear == null)
+        {
+            front = newNode;
+            rear = newNode;
+        }
+        else
+        {
+            rear.Next = newNode;
+            rear = newNode;
+        }
+    }
+
+    public int Dequeue()
+    {
+        if (front == null)
+        {
+            throw new System.Exception("Queue is empty");
+        }
+
+        int data = front.Data;
+        front = front.Next;
+
+        if (front == null)
+        {
+            rear = null;
+        }
+
+        return data;
+    }
+
+    public int Peek()
+    {
+        if (front == null)
+        {
+            throw new System.Exception("Queue is empty");
+        }
+
+        return front.Data;
+    }
+
+    public bool IsEmpty()
+    {
+        return front == null;
+    }
+}
+public class BulletManager : MonoBehaviour
+{
+    public GameObject bulletPrefab; // 발사할 프리팹
+    public Transform redBlock; // 빨간 블록의 Transform
+
+    private LinkedQueue bulletQueue = new LinkedQueue(); // 프리팹을 저장할 큐
+
+    void Start()
+    {
+        // 큐에 프리팹을 추가
+        for (int i = 0; i < 10; i++)
+        {
+            GameObject bullet = Instantiate(bulletPrefab, Vector3.zero, Quaternion.identity);
+            bullet.SetActive(false);
+            bulletQueue.Enqueue(bullet);
+        }
+    }
+
+    void Update()
+    {
+        // 마우스 클릭 시 발사
+        if (Input.GetMouseButtonDown(0))
+        {
+            FireBullet();
+        }
+    }
+
+    void FireBullet()
+    {
+        // 큐에서 다음 발사할 프리팹 가져오기
+        if (!bulletQueue.IsEmpty())
+        {
+            GameObject bullet = (GameObject)bulletQueue.Dequeue();
+            bullet.SetActive(true);
+            bullet.transform.position = transform.position;
+            bullet.GetComponent<Rigidbody>().velocity = transform.forward * 10f;
+        }
+        else
+        {
+            Debug.LogWarning("No more bullets available.");
+        }
+    }
+
+    // 충돌 감지
+    void OnCollisionEnter(Collision collision)
+    {
+        // 충돌한 객체가 빨간 블록이고, 충돌한 객체가 총알일 경우
+        if (collision.transform == redBlock && collision.gameObject.CompareTag("Bullet"))
+        {
+            // 충돌한 총알을 큐에 다시 추가
+            bulletQueue.Enqueue(collision.gameObject);
+            collision.gameObject.SetActive(false); // 총알 비활성화
+        }
+    }
+}
