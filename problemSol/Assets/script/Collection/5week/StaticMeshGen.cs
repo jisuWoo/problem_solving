@@ -9,6 +9,7 @@ using UnityEditor;
 
 public class StaticMeshGenEditor : Editor
 {
+
     public override void OnInspectorGUI()
     {
         base.OnInspectorGUI();
@@ -17,84 +18,121 @@ public class StaticMeshGenEditor : Editor
 
         if (GUILayout.Button("Generate Medsh"))
         {
-            script.StartMesh(3,5,5);
+            script.StartMesh();
         }
     }
 }
 
 
 public class StaticMeshGen : MonoBehaviour
-{
-    // Start is called before the first frame update
-    public void StartMesh(float radius, float height, int segments)
+{   public void StartMesh()
     {
+        float moveDistance = 0.5f;
+        float Zoffset = 1.0f;
+
         Mesh mesh = new Mesh();
 
-        List<Vector3> vertices = new List<Vector3>();
-        List<int> triangles = new List<int>();
+        float R = 1f;
+        float r = R * Mathf.Cos(36f * Mathf.Deg2Rad);
 
-        // ¿ÜºÎ¿Í ³»ºÎ ²ÀÁöÁ¡À» ¹ø°¥¾Æ°¡¸ç Ãß°¡ÇÕ´Ï´Ù.
-        for (int i = 0; i < segments * 2; i++)
+        Vector3[] vertices = new Vector3[5];
+
+        for (int i = 0; i < 5; i++)
         {
-            float angle = (2 * Mathf.PI / segments) * (i / 2) + Mathf.PI * (i % 2); // ¿ÜºÎ¿Í ³»ºÎ¸¦ ¹ø°¥¾Æ°¡¸ç Ãß°¡
-            float x = Mathf.Cos(angle) * radius;
-            float z = Mathf.Sin(angle) * radius;
-            float y = (i % 2 == 0) ? 0 : height; // ¿ÜºÎ ²ÀÁöÁ¡Àº y=0, ³»ºÎ ²ÀÁöÁ¡Àº y=height
-
-            vertices.Add(new Vector3(x, y, z)); // ²ÀÁöÁ¡ Ãß°¡
+            float angle = i * (360f / 5) * Mathf.Deg2Rad;
+            vertices[i] = new Vector3(R * Mathf.Cos(angle), R * Mathf.Sin(angle), 0);
         }
 
-        // º° ¸ð¾çÀÇ ÇÁ¸®ÁòÀ» »ý¼ºÇÕ´Ï´Ù.
-        for (int i = 0; i < segments * 2; i += 2)
+        Vector3 center = Vector3.zero;
+
+        Vector3[] midpoints = new Vector3[5];
+
+        for (int i = 0; i < 5; i++)
         {
-            int baseIndex = i;
-            int nextIndex = (i + 2) % (segments * 2);
-
-            // ¾Æ·¡ »ï°¢Çü
-            triangles.Add(baseIndex);
-            triangles.Add(baseIndex + 1);
-            triangles.Add(nextIndex);
-
-            // À§ »ï°¢Çü
-            triangles.Add(baseIndex + 1);
-            triangles.Add(nextIndex + 1);
-            triangles.Add(nextIndex);
+            int nextIndex = (i + 1) % 5;
+            midpoints[i] = Vector3.Lerp((vertices[i] + vertices[nextIndex]) / 2f, center, moveDistance); //+ new Vector3(0, 0, Zoffset);
         }
 
-        // ¹Ø¸é°ú À­¸éÀÇ Áß½ÉÁ¡À» Ãß°¡ÇÕ´Ï´Ù.
-        vertices.Add(Vector3.zero); // ¹Ø¸é Áß½ÉÁ¡
-        vertices.Add(new Vector3(0, height, 0)); // À­¸é Áß½ÉÁ¡
+        Vector3[] allVertices = new Vector3[vertices.Length + midpoints.Length];
+        vertices.CopyTo(allVertices, 0);
+        midpoints.CopyTo(allVertices, vertices.Length);
 
-        // ¹Ø¸é°ú À­¸éÀÇ »ï°¢ÇüÀ» »ý¼ºÇÕ´Ï´Ù.
-        for (int i = 0; i < segments * 2; i += 2)
+        Vector3[] m_Vertices = new Vector3[allVertices.Length];
+        Vector3[] p_Vertices = new Vector3[allVertices.Length];
+
+        for (int i = 0;i < allVertices.Length;i++)
         {
-            int baseIndex = i;
-            int nextIndex = (i + 2) % (segments * 2);
-
-            // ¾Æ·¡ »ï°¢Çü
-            triangles.Add(baseIndex);
-            triangles.Add(nextIndex);
-            triangles.Add(vertices.Count - 2); // ¹Ø¸éÀÇ Áß½ÉÁ¡ ÀÎµ¦½º
-
-            // À§ »ï°¢Çü
-            triangles.Add(baseIndex + 1);
-            triangles.Add(vertices.Count - 1); // À­¸éÀÇ Áß½ÉÁ¡ ÀÎµ¦½º
-            triangles.Add(nextIndex + 1);
+            m_Vertices[i] = allVertices[i] - new Vector3(0, 0, Zoffset);
+            p_Vertices[i] = allVertices[i] + new Vector3(0, 0, Zoffset);
         }
 
-        mesh.vertices = vertices.ToArray();
-        mesh.triangles = triangles.ToArray();
+        Vector3[] result = new Vector3[allVertices.Length * 2];
+        m_Vertices.CopyTo(result, 0);
+        p_Vertices.CopyTo(result, m_Vertices.Length);
 
-        // MeshFilter¿Í MeshRenderer Ãß°¡
-        MeshFilter mf = gameObject.AddComponent<MeshFilter>();
-        MeshRenderer mr = gameObject.AddComponent<MeshRenderer>();
+        int[] triangles = new int[]
+        {
+            1, 5, 6,
+            0, 9, 5,
+            5, 9, 8,
+            5, 8, 6,
+            6, 8, 7,
+            6, 7, 2,
+            7, 8, 3,
+            4, 8, 9,//ë³„1
 
-        mf.mesh = mesh;
-    }
+            10, 15, 19,
+            19, 18, 14,
+            18, 17, 13,
+            17, 16, 12,
+            16, 15, 11,
+            15, 16, 18,
+            16, 17, 18,
+            15, 18, 19,//ë³„2
 
-    // Update is called once per frame
-    void Update()
-    {
-        
+            0,10,9,
+            9,10,19,
+            5,15,0,
+            0,15,10,
+
+            1,11,5,
+            5,11,15,
+            6,16,1,
+            1,16,11,
+            
+            2,12,6,
+            6,12,16,
+            7,17,2,
+            2,17,12,
+            
+            3,13,7,
+            7,13,17,
+            8,18,3,
+            3,18,13,
+            
+            4,14,8,
+            8,14,18,
+            9,19,4,
+            4,19,14,                 
+        };
+
+        mesh.vertices = result;
+        mesh.triangles = triangles;
+
+        mesh.RecalculateNormals();
+
+        MeshFilter meshFilter = GetComponent<MeshFilter>();
+        if (!meshFilter)
+            meshFilter = gameObject.AddComponent<MeshFilter>();
+
+        meshFilter.mesh = mesh;
+
+        MeshRenderer meshRenderer = GetComponent<MeshRenderer>();
+        if (!meshRenderer)
+            meshRenderer = gameObject.AddComponent<MeshRenderer>();
+
+        meshRenderer.sharedMaterial = new Material(Shader.Find("Standard"));
+        meshRenderer.sharedMaterial.color = Color.yellow;
+
     }
 }
