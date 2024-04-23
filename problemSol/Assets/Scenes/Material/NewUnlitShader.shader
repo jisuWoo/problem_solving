@@ -61,7 +61,7 @@ Shader "Unlit/NewUnlitShader"
 
                 float3 result = (ambient + diffuse + specular);
                 
-                float threshold = 0.4;
+                float threshold = 0.2;
 				float3 banding = floor(result / threshold);
 				float3 finalIntensity = banding * threshold;
 				
