@@ -3,35 +3,42 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 using static UnityEngine.GraphicsBuffer;
+using UnityEngine.SceneManagement;
+using UnityEngine.SocialPlatforms;
 
 public class PlayerController : MonoBehaviour
 {
     public Transform Startpoint;
-    public Transform player; // ÇÃ·¹ÀÌ¾î Transform
+    public Transform player; // ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ Transform
     public Transform cube;
     public Rigidbody rb;
 
-    public float rotationSpeed = 90f; // È¸Àü ¼Óµµ (°¢µµ/ÃÊ)
-    public float moveSpeed = 5f; // ÀÌµ¿ ¼Óµµ
+    public float rotationSpeed = 90f; // È¸ï¿½ï¿½ ï¿½Óµï¿½ (ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½)
+    public float moveSpeed = 5f; // ï¿½Ìµï¿½ ï¿½Óµï¿½
 
-    private bool isRotating = false; // È¸Àü ÁßÀÎÁö ¿©ºÎ¸¦ ³ªÅ¸³»´Â º¯¼ö
-    private float targetAngle = 0f; // ¸ñÇ¥ È¸Àü °¢µµ¸¦ ÀúÀåÇÏ´Â º¯¼ö
-    private float currentAngle = 0f; // ÇöÀç È¸Àü °¢µµ¸¦ ÀúÀåÇÏ´Â º¯¼ö
-    private float rotateTime = 1f; // È¸Àü¿¡ °É¸®´Â ½Ã°£
+    private bool isRotating = false; // È¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Î¸ï¿½ ï¿½ï¿½Å¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+    private float targetAngle = 0f; // ï¿½ï¿½Ç¥ È¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½
+    private float currentAngle = 0f; // ï¿½ï¿½ï¿½ï¿½ È¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½
+    private float rotateTime = 1f; // È¸ï¿½ï¿½ï¿½ï¿½ ï¿½É¸ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½
 
+    public GameObject end;
 
-   
+    public int key = 0;  
+
     bool GameEnd = false;
 
     private void Start()
     {
         this.transform.position = new Vector3(Startpoint.position.x, transform.position.y, Startpoint.position.z);
         rb = GetComponent<Rigidbody>();
+        end.SetActive(false);
+        key = 0;
+
     }
 
     void Update()
     {
-        // Q Å°¸¦ ´©¸¦ ¶§ Ä«¸Þ¶ó¸¦ 45µµ È¸Àü
+        // Q Å°ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ Ä«ï¿½Þ¶ï¿½ 45ï¿½ï¿½ È¸ï¿½ï¿½
         if (Input.GetKeyDown(KeyCode.O))
         {
             StartRotation(-90f);
@@ -44,12 +51,12 @@ public class PlayerController : MonoBehaviour
         float horizontalInput = Input.GetAxis("Horizontal");
         float verticalInput = Input.GetAxis("Vertical");
 
-        // ÇÃ·¹ÀÌ¾î¸¦ ÀÌµ¿ ¹æÇâÀ¸·Î ÀÌµ¿
+        // ï¿½Ã·ï¿½ï¿½Ì¾î¸¦ ï¿½Ìµï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½
         Vector3 movement = new Vector3(horizontalInput, 0f, verticalInput) * moveSpeed * Time.deltaTime;
         //Vector3 worldMovement = player.TransformDirection(localMovement);
         rb.MovePosition(transform.position + (movement * 10f));
 
-        // È¸Àü ÁßÀÏ ¶§ È¸Àü Ã³¸®
+        // È¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ È¸ï¿½ï¿½ Ã³ï¿½ï¿½
         if (isRotating)
         {
             float rotationAmount = (targetAngle - currentAngle) / rotateTime * Time.deltaTime;
@@ -57,12 +64,14 @@ public class PlayerController : MonoBehaviour
             currentAngle += rotationAmount;
             //cube.Rotate(Vector3.up, rotationAmount);
 
-            // È¸ÀüÀÌ ¿Ï·áµÇ¸é È¸Àü Á¾·á
+            // È¸ï¿½ï¿½ï¿½ï¿½ ï¿½Ï·ï¿½Ç¸ï¿½ È¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
             if (Mathf.Abs(currentAngle - targetAngle) < 0.01f)
             {
                 isRotating = false;
             }
         }
+
+
     }
 
     void StartRotation(float angle)
@@ -75,7 +84,18 @@ public class PlayerController : MonoBehaviour
     {
         if(collision.collider.CompareTag("End"))
         {
-           GameEnd = true;
+           end.SetActive(true);
+           Time.timeScale = 0;
         }
+
+        if(collision.collider.CompareTag("Key"))
+        {
+            collision.collider.gameObject.SetActive(false);
+            key += 1;
+        }
+
     }
+
+
+
 }

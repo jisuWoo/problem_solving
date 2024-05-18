@@ -1,21 +1,21 @@
 Shader "Unlit/NewUnlitShader"
 {
-     Properties
+    Properties
     {
         _DiffuseColor("DiffuseColor", Color) = (1,1,1,1)
         _LightDirection("LightDirection", Vector) = (1,-1,-1,0)
+        _Brightness("Brightness", Range(0, 2)) = 1
     }
     SubShader
     {
         Tags { "RenderType"="Opaque" }
-
 
         Pass
         {
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-           
+
             #include "UnityCG.cginc"
 
             struct appdata
@@ -32,6 +32,7 @@ Shader "Unlit/NewUnlitShader"
 
             float4 _DiffuseColor;
             float4 _LightDirection;
+            float _Brightness;
 
             v2f vert (appdata v)
             {
@@ -50,22 +51,22 @@ Shader "Unlit/NewUnlitShader"
                 float3 lightDir = normalize(_LightDirection.xyz);
 
                 float ambientS = 0.2;
-                float3 ambient = ambientS * _DiffuseColor.rgb;
-                
+                float3 ambient = ambientS * _DiffuseColor.rgb * _Brightness;
+
                 float diff = max(dot(normal, lightDir),0.0);
-                float3 diffuse = diff * _DiffuseColor.rgb;
+                float3 diffuse = diff * _DiffuseColor.rgb * _Brightness;
 
                 float3 reflectDir = reflect(-lightDir,normal);
                 float spec = pow(max(dot(viewDir,reflectDir),0.0),32.0);
-                float3 specular = 0.5 * spec * float3(1.0, 1.0, 1.0);
+                float3 specular = 0.5 * spec * float3(1.0, 1.0, 1.0) * _Brightness;
 
                 float3 result = (ambient + diffuse + specular);
-                
-                float threshold = 0.2;
-				float3 banding = floor(result / threshold);
-				float3 finalIntensity = banding * threshold;
-				
-				float4 col = float4(finalIntensity.x, finalIntensity.y, finalIntensity.z, 1.0);
+
+                float threshold = 0.4;
+                float3 banding = floor(result / threshold);
+                float3 finalIntensity = banding * threshold;
+
+                float4 col = float4(finalIntensity.x, finalIntensity.y, finalIntensity.z, 1.0);
                 //float4 col = float4(result,1.0);
 
                 return col;
